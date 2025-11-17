@@ -1,1 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Two‑ & Three‑Step Equations – Interactive Worksheet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Confetti -->
+  <script async src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    :root{
+      --accent:#00695c; --accent-2:#00897b; --light:#e0f2f1;
+      --error:#e53935; --success:#43a047;
+      --field-w:8.5rem; --shadow:0 2px 4px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,sans-serif;
+      margin:0; padding:1rem;
+      background: radial-gradient(1200px 800px at 10% -10%, #ffffff 0%, #e0f7fa 38%, #e0f2f1 60%, #d7efe9 100%);
+      color:#15131a;
+    }
+    h1{text-align:center;color:var(--accent);margin:.4rem 0 .2rem}
+    p{max-width:980px;margin:.25rem auto;text-align:center}
+
+    /* Logo */
+    .logo{
+      position:absolute;top:10px;left:10px;
+      width:305px;height:94px;object-fit:contain;
+      border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15);
+    }
+
+    /* Stats */
+    #scoreTop{font-size:1.03rem;font-weight:700;text-align:center;color:#000;margin:.2rem auto}
+    .stats{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin:.4rem auto;max-width:980px}
+    .pill{background:#fff;border:2px solid var(--accent);border-radius:999px;padding:.35rem .75rem;box-shadow:var(--shadow);font-weight:700;font-size:.9rem}
+    .xp-bar{position:relative;width:210px;height:.55rem;background:#dff1ef;border-radius:999px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:.5rem}
+    .xp-fill{position:absolute;left:0;top:0;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+
+    /* Hint accordion (unchanged text) */
+    details{max-width:980px;margin:.8rem auto;border:2px solid var(--accent);border-radius:10px;background:#fff;box-shadow:var(--shadow);}
+    summary{padding:.65rem 1rem;font-weight:800;cursor:pointer;color:#0b7a6c}
+    summary::-webkit-details-marker{display:none;}
+    .hint{padding:0 1.1rem 1rem;font-size:.96rem;line-height:1.55}
+    .hint ul{padding-left:1.2rem;margin:.4rem 0;}
+    .example{margin:.25rem 0;text-align:center;font-size:1.02rem}
+
+    /* Grid / Problems */
+    .grid{display:grid;gap:1rem;max-width:980px;margin:1rem auto;}
+    @media (min-width:800px){ .grid{grid-template-columns:1fr 1fr;} }
+
+    .problem{
+      position:relative;
+      display:grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto auto; /* row1: label+math, row2: input+btn, row3: feedback/steps */
+      align-items:center;
+      gap:.6rem 1rem;
+      padding: clamp(.8rem, 1.3vw + .6rem, 1.2rem) clamp(1rem, 2.4vw + .6rem, 2.2rem);
+      background:#fff;border-radius:.8rem;box-shadow:var(--shadow);border:1px solid #cfe9e5;
+    }
+
+    /* Label line: never overlaps math */
+    .expr-line{display:flex; align-items:center; gap:.6rem; min-width:0;}
+    .qnum{
+      flex:0 0 auto;
+      font-size:.78rem;font-weight:900;color:#0b7a6c;
+      border:1px solid #c1e6e1;background:#e8f5f4;border-radius:999px;
+      padding:.15rem .55rem
+    }
+    .math{
+      flex:1 1 auto; min-width:0;
+      display:inline-block; white-space:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%;
+      font-size: clamp(1rem, 2vw + .2rem, 1.18rem);
+    }
+    .math::-webkit-scrollbar{height:6px}
+    .math::-webkit-scrollbar-thumb{background:#cfe9e5;border-radius:6px}
+
+    /* Inputs */
+    .input-wrapper{display:flex;align-items:center;gap:.45rem; justify-self:start}
+    .input-wrapper .label{font-weight:800;color:#333}
+    .ans{width:var(--field-w);text-align:center;border:1px solid #999;border-radius:6px;font-size:1.05rem;background:#fafafa;padding:.28rem 0;}
+    .ans:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px #00695c33}
+    .win{box-shadow:0 0 0 3px #43a04733!important;border-color:var(--success)!important;background:#f1fff3!important}
+
+    /* Buttons */
+    .btn{padding:.55rem .95rem;font-size:.86rem;font-weight:800;border:none;border-radius:.55rem;cursor:pointer;transition:transform .03s ease, background .2s;user-select:none}
+    .btn:active{transform:translateY(1px)}
+    #checkBtn{background:var(--accent);color:#fff;} #checkBtn:hover{background:#0b7a6c}
+    #newBtn{background:#555;color:#fff;} #newBtn:hover{background:#333}
+    #revealBtn{background:#eee;} #revealBtn:hover{background:#ddd}
+    .stepsBtn{justify-self:end;background:#e8f5f4;border:1px solid #c1e6e1;color:#0b7a6c}
+    .stepsBtn:hover{background:#dff1ef}
+    .rowBtns{display:flex;gap:.4rem}
+
+    /* Feedback / steps */
+    .marker{position:absolute;bottom:.5rem;right:.6rem;font-size:1.55rem;font-weight:900;min-width:1.9rem;text-align:center;line-height:1;pointer-events:none}
+    .ok{color:var(--success)} .no{color:var(--error)}
+    .msg{font-size:.9rem;color:#5a5a5a;grid-column:1 / -1}
+
+    .steps{font-size:1rem;color:#0f2b27;background:#f8fcfb;border:1px dashed #cfe9e5;border-radius:.5rem;padding:.75rem .8rem;grid-column:1 / -1}
+    .step{margin:1rem 0;}            /* clear space between steps */
+    .expl{font-weight:700;margin-bottom:.25rem}
+    .op-red{color:#d32f2f;font-weight:900}
+
+    /* Controls */
+    .controls{ text-align:center;margin-top:.6rem;display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap }
+
+    /* Celebration */
+    .celebrate-banner{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:.6rem 1rem;border-radius:999px;box-shadow:var(--shadow);z-index:9999;font-weight:900}
+    .pulse{animation:pulse 1s ease;}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+
+    @media print{
+      #checkBtn, #newBtn, #revealBtn, details, .logo, #score, #scoreTop, .stats{display:none!important}
+      body{background:#fff}
+      .problem{page-break-inside:avoid}
+    }
+  </style>
+</head>
+<body>
+  <!-- Bucks College Group logo -->
+  <img src="https://www.buckscollegegroup.ac.uk/templates/bucks/images/logo.svg" alt="Bucks College Group" class="logo" width="305" height="94">
+
+  <h1>Solve Two‑ & Three‑Step Equations</h1>
+  <p id="scoreTop"></p>
+
+  <div class="stats">
+    <div class="pill">
+      Lvl <span id="level">1</span> • XP <span id="xpText">0/100</span>
+      <span class="xp-bar"><span id="xpFill" class="xp-fill"></span></span>
+    </div>
+    <div class="pill">🔥 Streak: <span id="streak">0</span></div>
+    <div class="pill">Best: <span id="best">0</span></div>
+  </div>
+
+  <!-- Hint accordion (unchanged wording) -->
+  <details>
+    <summary>Need a hint? (click to expand)</summary>
+    <div class="hint">
+      <p><b>Goal:</b> isolate <b>x</b> by undoing operations in reverse order.</p>
+      <strong>Two‑step patterns</strong>
+      <ul>
+        <li><b>ax + b = c</b>: subtract <b>b</b>, then divide by <b>a</b>.</li>
+        <li><b>a(x ± b) = c</b>: divide by <b>a</b>, then add/subtract <b>b</b>.</li>
+        <li><b>(x ± b)/m = c</b>: multiply by <b>m</b>, then add/subtract <b>b</b>.</li>
+      </ul>
+      <div class="example">Example: <b>3x + 5 = 20</b> → <b>3x = 15</b> → <b>x = 5</b></div>
+      <strong>Three‑step patterns</strong>
+      <ul>
+        <li><b>a(x ± b) + c = d</b>: subtract <b>c</b> → divide by <b>a</b> → add/subtract <b>b</b>.</li>
+        <li><b>(ax + b)/m + c = d</b>: subtract <b>c</b> → multiply by <b>m</b> → subtract <b>b</b> → divide by <b>a</b>.</li>
+        <li><b>ax + bx + c = d</b>: combine like terms → subtract <b>c</b> → divide by the coefficient of <b>x</b>.</li>
+      </ul>
+      <p>Keyboard: <code>Enter</code> = Check • <code>R</code> = Reveal • <code>N</code> = New set</p>
+    </div>
+  </details>
+
+  <p>Enter your value of <em>x</em>. Integers, decimals, or common fractions are accepted. If an answer is incorrect, a <b>Show steps</b> button appears with MathML steps and explanations.</p>
+
+  <div id="problems" class="grid"></div>
+
+  <div class="controls">
+    <button id="checkBtn" class="btn">Check answers</button>
+    <button id="revealBtn" class="btn">Reveal answers</button>
+    <button id="newBtn" class="btn">New questions</button>
+  </div>
+  <p id="score"></p>
+
+  <div id="celebrate" class="celebrate-banner" hidden>Perfect score! 🎉 Well done!</div>
+
+<script>
+(function(){
+  // ---------- DOM ----------
+  const $grid = document.getElementById('problems');
+  const $scoreTop = document.getElementById('scoreTop');
+  const $score = document.getElementById('score');
+  const $xpFill = document.getElementById('xpFill');
+  const $xpText = document.getElementById('xpText');
+  const $level = document.getElementById('level');
+  const $streak = document.getElementById('streak');
+  const $best = document.getElementById('best');
+
+  const TOTAL = 15;
+
+  // ---------- Gamification ----------
+  let xp=0, level=1, streak=0, best=0;
+  function addXP(amount=10){
+    xp += amount;
+    let need = Math.round(100*(1 + 0.6*(level-1)));
+    while(xp>=need){
+      xp -= need; level++;
+      need = Math.round(100*(1 + 0.6*(level-1)));
+      toast(`Level up! 🎯 Level ${level}`);
+      if(window.confetti) confetti({ particleCount: 120, spread: 70, origin:{x:.5,y:.2} });
+    }
+    $xpFill.style.width = Math.min(100, Math.round(100*xp/need)) + '%';
+    $xpText.textContent = `${xp}/${need}`;
+    $level.textContent = level;
+  }
+  function updateStreak(isPerfect){ if(isPerfect){ streak++; best = Math.max(best, streak); } else { streak = 0; } $streak.textContent = streak; $best.textContent = best; }
+  function toast(msg){ const b=document.createElement('div'); b.textContent=msg; b.className='celebrate-banner pulse'; document.body.appendChild(b); setTimeout(()=>b.remove(),2000); }
+
+  // ---------- Utilities ----------
+  const randi=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const choice=arr=>arr[randi(0,arr.length-1)];
+  const nearlyEqual=(a,b)=>{ if(!isFinite(a)||!isFinite(b)) return false; if(a===b) return true; const diff=Math.abs(a-b), scale=Math.max(1,Math.abs(a),Math.abs(b)); return diff/scale<1e-9; };
+  function parseGuess(str){
+    if(!str) return NaN;
+    str = String(str).trim().replace(/\s+/g,'').replace(/^x=+/i,'').replace(/^x/i,'');
+    if(/^[+-]?\d+\/[+-]?\d+$/.test(str)){ const [a,b]=str.split('/').map(Number); if(b===0) return NaN; return a/b; }
+    const val = Number(str); return Number.isFinite(val) ? val : NaN;
+  }
+
+  // ---------- MathML helpers ----------
+  const MNS = 'http://www.w3.org/1998/Math/MathML';
+  const moMinus = '&#x2212;'; // −
+  const dot = '&#x22C5;';     // ⋅
+
+  const mNum = n => `<mn>${n}</mn>`;
+  const mSign = n => n>=0 ? '<mo>+</mo>' : `<mo>${moMinus}</mo>`;
+  const mAbs = n => `<mn>${Math.abs(n)}</mn>`;
+  const mRed = inner => `<mstyle mathcolor="#d32f2f">${inner}</mstyle>`;
+  const mTimes = (A,B)=>`<mrow>${A}<mo>${dot}</mo>${B}</mrow>`;
+  const mFrac = (N,D)=>`<mfrac><mrow>${N}</mrow><mrow>${D}</mrow></mfrac>`;
+  const mEq = (L,R)=>`<math xmlns="${MNS}" display="inline"><mrow>${L}<mo>=</mo>${R}</mrow></math>`;
+
+  function mTermX(k){
+    if(k===1) return '<mi>x</mi>';
+    if(k===-1) return `<mo>${moMinus}</mo><mi>x</mi>`;
+    if(k<0) return `<mo>${moMinus}</mo><mn>${Math.abs(k)}</mn><mi>x</mi>`;
+    return `<mn>${k}</mn><mi>x</mi>`;
+  }
+  function mAxPlusB(a,b){
+    if(b===0) return `<mrow>${mTermX(a)}</mrow>`;
+    return `<mrow>${mTermX(a)}${mSign(b)}${mAbs(b)}</mrow>`;
+  }
+  function mParenXpm(b){ return `<mrow><mo>(</mo><mi>x</mi>${mSign(b)}${mAbs(b)}<mo>)</mo></mrow>`; }
+
+  // ---------- Generators (integer answers; originals avoid +0/−0; MathML everywhere) ----------
+  // Q1–Q3: ax + b = c
+  function genTwo_AxPlusB_eq_C(){
+    let a = choice([-9,-8,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9]);
+    const x = randi(-10,10);
+    let b = choice([-12,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9,10,12]);
+    const c = a*x + b;
+    const text = mEq(mAxPlusB(a,b), mNum(c));
+
+    const step1Expl = b>=0 ? `Subtract ${b} from both sides.` : `Add ${Math.abs(b)} to both sides.`;
+    const step2Expl = `Divide both sides by <span class="op-red">${a}</span>.`;
+
+    const step1 = { expl: step1Expl, eq: mEq(mTermX(a), mNum(c - b)) };
+    const step2 = { expl: step2Expl, eq: mEq('<mi>x</mi>', mFrac(mNum(c - b), mRed(mNum(a)))) };
+    const step3 = { expl:`Simplify.`, eq: mEq('<mi>x</mi>', mNum(x)) };
+
+    return {kind:'two', text, answer:x, steps: [step1,step2,step3], solved:false};
+  }
+
+  // Q4–Q6: ax + b = cx + d  (x on both sides)
+  function genBothSides_axb_eq_cxd(){
+    const coeffs = [-9,-8,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9];
+    let a = choice(coeffs);
+    let c = choice(coeffs.filter(v=>v!==a));
+    let x = randi(-9,9);
+    let b = choice([-12,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9,10,12]);
+    let d = (a - c)*x + b;
+    let guard=0; while(d===0 && guard<50){ x=randi(-9,9); b=choice([-12,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9,10,12]); d=(a-c)*x+b; guard++; }
+
+    const text = mEq(mAxPlusB(a,b), mAxPlusB(c,d));
+    const delta = a - c; // nonzero
+
+    const step1Expl = c>=0 ? `Subtract ${c}x from both sides.` : `Add ${Math.abs(c)}x to both sides.`;
+    const step2Expl = b>=0 ? `Subtract ${b} from both sides.` : `Add ${Math.abs(b)} to both sides.`;
+    const step3Expl = `Divide both sides by <span class="op-red">${delta}</span>.`;
+
+    const step1 = { expl: step1Expl, eq: mEq(mAxPlusB(delta,b), mNum(d)) };
+    const step2 = { expl: step2Expl, eq: mEq(mTermX(delta), mNum(d - b)) };
+    const step3 = { expl: step3Expl, eq: mEq('<mi>x</mi>', mFrac(mNum(d - b), mRed(mNum(delta)))) };
+    const step4 = { expl:`Simplify.`, eq: mEq('<mi>x</mi>', mNum(x)) };
+
+    return {kind:'three', text, answer:x, steps: [step1,step2,step3,step4], solved:false};
+  }
+
+  // Other 2‑step: a(x ± b) = c
+  function genTwo_aParen_eq_c(){
+    const a = choice([-9,-8,-7,-6,-5,-4,-3,-2,2,3,4,5,6,7,8,9]);
+    const x = randi(-9,9);
+    const b = choice([-9,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,9]);
+    const c = a*(x + b);
+    const text = mEq(`<mrow><mn>${a}</mn>${mParenXpm(b)}</mrow>`, mNum(c));
+
+    const step1Expl = `Divide both sides by <span class="op-red">${a}</span>.`;
+    const step2Expl = b>=0 ? `Subtract ${b} from both sides.` : `Add ${Math.abs(b)} to both sides.`;
+
+    const step1 = { expl: step1Expl, eq: mEq(mParenXpm(b), mFrac(mNum(c), mRed(mNum(a)))) };
+    const step2 = { expl: step2Expl, eq: mEq('<mi>x</mi>', `<mrow>${mFrac(mNum(c), mNum(a))}${b>=0?'<mo>−</mo>':'<mo>+</mo>'}${mNum(Math.abs(b))}</mrow>`) };
+    const step3 = { expl:`Simplify.`, eq: mEq('<mi>x</mi>', mNum(x)) };
+
+    return {kind:'two', text, answer:x, steps:[step1,step2,step3], solved:false};
+  }
+
+  // Other 2‑step: (x ± b)/m = k
+  function genTwo_frac_eq_c(){
+    const m = randi(2,9);
+    const b = choice([-8,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,8]);
+    const k = randi(-8,8);
+    const x = m*k - b;
+
+    const frac = mFrac(`<mrow><mi>x</mi>${mSign(b)}${mAbs(b)}</mrow>`, mNum(m));
+    const text = mEq(frac, mNum(k));
+
+    const step1Expl = `Multiply both sides by <span class="op-red">${m}</span>.`;
+    const step3Expl = b>=0 ? `Subtract ${b} from both sides.` : `Add ${Math.abs(b)} to both sides.`;
+
+    const step1 = { expl: step1Expl, eq: mEq(`<mrow><mi>x</mi>${mSign(b)}${mAbs(b)}</mrow>`, mTimes(mRed(mNum(m)), mNum(k))) };
+    const step2 = { expl:`Simplify the product.`, eq: mEq(`<mrow><mi>x</mi>${mSign(b)}${mAbs(b)}</mrow>`, mNum(m*k)) };
+    const step3 = { expl: step3Expl, eq: mEq('<mi>x</mi>', `<mrow>${mNum(m*k)}${b>=0?'<mo>−</mo>':'<mo>+</mo>'}${mNum(Math.abs(b))}</mrow>`) };
+    const step4 = { expl:`Simplify.`, eq: mEq('<mi>x</mi>', mNum(x)) };
+
+    return {kind:'two', text, answer:x, steps:[step1,step2,step3,step4], solved:false};
+  }
+
+  // Other 3‑step: a(x ± b) + c = d
+  function genThree_aParen_plus_c_eq_d(){
+    const a = choice([-9,-8,-7,-6,-5,-4,-3,-2,2,3,4,5,6,7,8,9]);
+    const x = randi(-9,9);
+    const b = choice([-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7]);
+    let c = randi(-12,12); while(c===0) c = randi(-12,12);
+    const d = a*(x + b) + c;
+
+    const text = mEq(`<mrow><mn>${a}</mn>${mParenXpm(b)}${mSign(c)}${mAbs(c)}</mrow>`, mNum(d));
+
+    const step1Expl = c>=0 ? `Subtract ${c} from both sides.` : `Add ${Math.abs(c)} to both sides.`;
+    const step2Expl = `Divide both sides by <span class="op-red">${a}</span>.`;
+    const step3Expl = b>=0 ? `Subtract ${b} from both sides.` : `Add ${Math.abs(b)} to both sides.`;
+
+    const step1 = { expl: step1Expl, eq: mEq(`<mrow><mn>${a}</mn>${mParenXpm(b)}</mrow>`, mNum(d - c)) };
+    const step2 = { expl: step2Expl, eq: mEq(mParenXpm(b), mFrac(mNum(d - c), mRed(mNum(a)))) };
+    const step3 = { expl: step3Expl, eq: mEq('<mi>x</mi>', `<mrow>${mFrac(mNum(d - c), mNum(a))}${b>=0?'<mo>−</mo>':'<mo>+</mo>'}${mNum(Math.abs(b))}</mrow>`) };
+    const step4 = { expl:`Simplify.`, eq: mEq('<mi>x</mi>', mNum(x)) };
+
+    return {kind:'three', text, answer:x, steps:[step1,step2,step3,step4], solved:false};
+  }
+
+  // Other 3‑step: (ax + b)/m + c = d
+  function genThree_frac_plus_c_eq_d(){
+    let a = choice([-7,-6,-5,-4,-3,-2,2,3,4,5,6,7]);
+    const m = randi(2,9);
+    let c = randi(-9,9); while(c===0) c = randi(-9,9);
+    const x = randi(-8,8);
+    let k = randi(-8,8);
+    let b = m*k - a*x;
+    let guard=0; while(b===0 && guard<50){ k=randi(-8,8); b=m*k - a*x; guard++; }
+    if(b===0) return genThree_frac_plus_c_eq_d();
+
+    const d = k + c;
+    const frac = mFrac(mAxPlusB(a,b), mNum(m));
+    const text = mEq(`<mrow>${frac}${mSign(c)}${mAbs(c)}</mrow>`, mNum(d));
+
+    const step1Expl = c>=0 ? `Subtract ${c} from both sides.` : `Add ${Math.abs(c)} to both sides.`;
+    const step2Expl = `Multiply both sides by <span class="op-red">${m}</span>.`;
+    const step4Expl = b>=0 ? `Subtract ${b} from both sides.` : `Add ${Math.abs(b)} to both sides.`;
+    const step5Expl = `Divide both sides by <span class="op-red">${a}</span>.`;
+
+    const step1 = { expl: step1Expl, eq: mEq(frac, mNum(k)) };
+    const step2 = { expl: step2Expl, eq: mEq(mAxPlusB(a,b), mTimes(mRed(mNum(m)), mNum(k))) };
+    const step3 = { expl:`Simplify the product.`, eq: mEq(mAxPlusB(a,b), mNum(m*k)) };
+    const step4 = { expl: step4Expl, eq: mEq(mTermX(a), `<mrow>${mNum(m*k)}${b>=0?'<mo>−</mo>':'<mo>+</mo>'}${mNum(Math.abs(b))}</mrow>`) };
+    const val = m*k - b;
+    const step5 = { expl: step5Expl, eq: mEq('<mi>x</mi>', mFrac(mNum(val), mRed(mNum(a)))) };
+    const step6 = { expl:`Simplify.`, eq: mEq('<mi>x</mi>', mNum(x)) };
+
+    return {kind:'three', text, answer:x, steps:[step1,step2,step3,step4,step5,step6], solved:false};
+  }
+
+  // Other 3‑step: ax + bx + c = d
+  function genThree_ax_plus_bx_plus_c_eq_d(){
+    let a = choice([-7,-6,-5,-4,-3,-2,2,3,4,5,6,7]);
+    let bcoef = choice([-7,-6,-5,-4,-3,-2,2,3,4,5,6,7]);
+    for(let tries=0; tries<20 && a + bcoef === 0; tries++) bcoef = choice([-7,-6,-5,-4,-3,-2,2,3,4,5,6,7]);
+    const p = a + bcoef;
+    const x = randi(-9,9);
+    let c = randi(-10,10); while(c===0) c = randi(-10,10);
+    const d = p*x + c;
+
+    let left = mTermX(a);
+    left += (bcoef>=0 ? `<mo>+</mo>${mTermX(bcoef)}` : `${mTermX(bcoef)}`);
+    left += (c>=0 ? `<mo>+</mo>${mNum(c)}` : `<mo>${moMinus}</mo>${mNum(Math.abs(c))}`);
+
+    const text = mEq(`<mrow>${left}</mrow>`, mNum(d));
+
+    const step1 = { expl:`Combine like terms on the left by adding the coefficients of x.`, eq: mEq(`<mrow><mn>${p}</mn><mi>x</mi>${c>=0?'<mo>+</mo>':'<mo>'+moMinus+'</mo>'}${mNum(Math.abs(c))}</mrow>`, mNum(d)) };
+    const step2Expl = c>=0 ? `Subtract ${c} from both sides.` : `Add ${Math.abs(c)} to both sides.`;
+    const step2 = { expl: step2Expl, eq: mEq(`<mrow><mn>${p}</mn><mi>x</mi></mrow>`, mNum(d - c)) };
+    const step3Expl = `Divide both sides by <span class="op-red">${p}</span>.`;
+    const step3 = { expl: step3Expl, eq: mEq('<mi>x</mi>', mFrac(mNum(d - c), mRed(mNum(p)))) };
+    const step4 = { expl:`Simplify.`, eq: mEq('<mi>x</mi>', mNum(x)) };
+
+    return {kind:'three', text, answer:x, steps:[step1,step2,step3,step4], solved:false};
+  }
+
+  // Pools for Q7–Q15
+  const otherTwoGens = [genTwo_aParen_eq_c, genTwo_frac_eq_c];
+  const otherThreeGens = [genThree_aParen_plus_c_eq_d, genThree_frac_plus_c_eq_d, genThree_ax_plus_bx_plus_c_eq_d];
+
+  // ---------- Rendering ----------
+  let problems=[];
+  function buildRow(i,p){
+    const qnum = i+1;
+    return `<div class='problem' data-idx='${i}'>
+      <div class='expr-line'>
+        <span class='qnum'>Q${qnum}</span>
+        <span class='math'>${p.text}</span>
+      </div>
+      <div class='input-wrapper'>
+        <span class='label'>x =</span>
+        <input aria-label='x value for Q${qnum}' class='ans' inputmode='decimal' placeholder='number or fraction'>
+      </div>
+      <div class='rowBtns'>
+        <button class='btn stepsBtn' type='button' title='Show steps' hidden>Show steps</button>
+      </div>
+      <span class='marker'></span>
+      <div class='msg'></div>
+      <div class='steps' hidden></div>
+    </div>`;
+  }
+
+  function render(){
+    problems.length=0; $grid.innerHTML='';
+
+    // Q1–Q3: ax + b = c
+    for(let i=0;i<3;i++){ const p = genTwo_AxPlusB_eq_C(); problems.push(p); $grid.insertAdjacentHTML('beforeend', buildRow(i,p)); }
+    // Q4–Q6: ax + b = cx + d (unknown on both sides)
+    for(let i=3;i<6;i++){ const p = genBothSides_axb_eq_cxd(); problems.push(p); $grid.insertAdjacentHTML('beforeend', buildRow(i,p)); }
+    // Q7–Q15: other forms
+    for(let i=6;i<TOTAL;i++){
+      const pick = Math.random()<0.4 ? choice(otherTwoGens) : choice(otherThreeGens);
+      const p = pick(); problems.push(p); $grid.insertAdjacentHTML('beforeend', buildRow(i,p));
+    }
+
+    // Steps toggles (hidden until first wrong attempt)
+    $grid.querySelectorAll('.problem').forEach((row,idx)=>{
+      const btn = row.querySelector('.stepsBtn');
+      btn.addEventListener('click', ()=>{
+        const stepsWrap = row.querySelector('.steps');
+        if(stepsWrap.hidden){
+          stepsWrap.hidden = false;
+          const html = problems[idx].steps.map(s=>(
+            `<div class="step">
+               <div class="expl">${s.expl}</div>
+               <div class="math">${s.eq}</div>
+             </div>`
+          )).join('');
+          stepsWrap.innerHTML = html;
+          btn.textContent='Hide steps';
+        } else {
+          stepsWrap.hidden = true;
+          stepsWrap.textContent='';
+          btn.textContent='Show steps';
+        }
+      });
+    });
+
+    updateScore('');
+    reveal(false);
+  }
+
+  function updateScore(t){ $score.textContent=t; $scoreTop.textContent=t; }
+
+  let hasCelebrated=false;
+  function celebratePerfect(){
+    if(hasCelebrated) return; hasCelebrated=true;
+    const b=document.getElementById('celebrate'); b.hidden=false; setTimeout(()=>b.hidden=true, 3500);
+    if(window.confetti){
+      const end=Date.now()+1500;
+      (function frame(){
+        confetti({ particleCount: 9, angle: 60, spread: 55, origin:{x:0} });
+        confetti({ particleCount: 9, angle: 120, spread: 55, origin:{x:1} });
+        if(Date.now()<end) requestAnimationFrame(frame);
+      })();
+    }
+  }
+
+  function check(){
+    let ok=0, newSolved=0, anyWrong=false;
+    document.querySelectorAll('.problem').forEach((row,i)=>{
+      const p = problems[i];
+      const mark = row.querySelector('.marker');
+      const msg = row.querySelector('.msg');
+      const input = row.querySelector('.ans');
+      const btn = row.querySelector('.stepsBtn');
+      const stepsBox = row.querySelector('.steps');
+
+      const guessRaw = input.value.trim();
+      const guess = parseGuess(guessRaw);
+      let correct=false, message='';
+
+      if(guessRaw===''){ correct=false; message=''; }
+      else if(Number.isNaN(guess)){ correct=false; message='Please enter a valid number (e.g., -7/3)'; }
+      else { correct = nearlyEqual(guess, p.answer); message = correct? '' : 'Not quite. Follow the add/subtract and multiply/divide steps in order.'; }
+
+      if(correct){
+        ok++; mark.textContent='✓'; mark.className='marker ok'; msg.textContent=''; input.classList.add('win');
+        btn.hidden = true; stepsBox.hidden = true; stepsBox.textContent='';
+        if(!p.solved){ newSolved++; p.solved=true; if(window.confetti) confetti({ particleCount:60, spread:55, origin:{x:.5,y:.2} }); }
+      } else {
+        mark.textContent = (guessRaw==='') ? '' : '✗';
+        mark.className = (guessRaw==='') ? 'marker' : 'marker no';
+        msg.textContent = message; input.classList.remove('win');
+        if(guessRaw!==''){ anyWrong=true; btn.hidden = false; } else { btn.hidden = true; stepsBox.hidden = true; stepsBox.textContent=''; }
+      }
+    });
+    updateScore(`You scored ${ok}/${TOTAL}`);
+    if(newSolved>0) addXP(10*newSolved);
+    const perfect = ok===TOTAL && !anyWrong; updateStreak(perfect);
+    if(ok===TOTAL) celebratePerfect();
+  }
+
+  function reveal(show=true){
+    document.querySelectorAll('.problem').forEach((row,i)=>{
+      const p = problems[i]; const msg = row.querySelector('.msg');
+      msg.textContent = show? `Ans: x = ${p.answer}` : '';
+    });
+  }
+
+  // Events
+  document.getElementById('checkBtn').addEventListener('click', check);
+  document.getElementById('newBtn').addEventListener('click', ()=>{ hasCelebrated=false; streak=0; $streak.textContent='0'; render(); });
+  document.getElementById('revealBtn').addEventListener('click', ()=>{
+    const any = Array.from(document.querySelectorAll('.msg')).some(el=>el.textContent.startsWith('Ans:'));
+    reveal(!any);
+  });
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Enter') check(); if(['r','R'].includes(e.key)) document.getElementById('revealBtn').click(); if(['n','N'].includes(e.key)) document.getElementById('newBtn').click(); });
+
+  // Init
+  render();
+})();
+</script>
+</body>
+</html>
+
 
